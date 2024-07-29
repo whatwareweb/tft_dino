@@ -1,6 +1,8 @@
 #include <TFT_eSPI.h>
 #include "bitmaps.h"
 
+#define cactiAmount 4
+
 const int jumpButton = 15;
 
 TFT_eSPI tft = TFT_eSPI();
@@ -29,6 +31,9 @@ const int jumpHeight = 8;
 bool inJump;
 int jumpPosition;
 int walkFrame;
+
+TFT_eSprite cacti[cactiAmount] = {TFT_eSprite(&tft), TFT_eSprite(&tft), TFT_eSprite(&tft), TFT_eSprite(&tft)};
+const int cactiY = 185;
 
 
 void setup() {
@@ -74,6 +79,7 @@ void loop() {
 
     scroll_ground();
     updateDino();
+    handleCacti();
 
     background.pushSprite(0, 0);
     background.deleteSprite();
@@ -127,4 +133,10 @@ void updateDino() {
   }
 
   walkFrame++;
+}
+
+void handleCacti() {
+  cacti[0].createSprite(cactus_width, cactus_height);
+  cacti[0].drawXBitmap(0, 0, cactus_bits, cactus_width, cactus_height, TFT_DARKGREY, TFT_BLACK);
+  cacti[0].pushToSprite(&background, 120, cactiY, TFT_BLACK);
 }
