@@ -17,6 +17,7 @@ TFT_eSprite walk2Dino = TFT_eSprite(&tft);
 TFT_eSprite deadDino = TFT_eSprite(&tft);
 
 bool gameOver;
+int score = 0;
 
 int groundPosition;
 int gameSpeed;
@@ -32,7 +33,14 @@ bool inJump;
 int jumpPosition;
 int walkFrame;
 
-TFT_eSprite cacti[cactiAmount] = {TFT_eSprite(&tft), TFT_eSprite(&tft), TFT_eSprite(&tft), TFT_eSprite(&tft)};
+class Cactus {
+public:
+  TFT_eSprite sprite = TFT_eSprite(&tft);
+  int x;
+  bool init;
+};
+
+Cactus cacti[cactiAmount];
 const int cactiY = 185;
 
 
@@ -136,7 +144,23 @@ void updateDino() {
 }
 
 void handleCacti() {
-  cacti[0].createSprite(cactus_width, cactus_height);
-  cacti[0].drawXBitmap(0, 0, cactus_bits, cactus_width, cactus_height, TFT_DARKGREY, TFT_BLACK);
-  cacti[0].pushToSprite(&background, 120, cactiY, TFT_BLACK);
+  for (int i = 0; i < cactiAmount; i++) {
+    if (!cacti[i].init) {
+      cacti[i].sprite.createSprite(cactus_width, cactus_height);
+      cacti[i].sprite.drawXBitmap(0, 0, cactus_bits, cactus_width, cactus_height, TFT_DARKGREY, TFT_BLACK);
+      cacti[i].x = 320 * i + random(-50, 50);
+      cacti[i].init = 1;
+    }
+
+    if (cacti[i].x <= -cacti[i].sprite.width()) {
+      cacti[i].x = 320 * cactiAmount + random(-50, 50);
+    }
+    cacti[i].x -= gameSpeed;
+
+    if (cacti[i].x <= dinoX) {
+      score++;
+    }
+
+    cacti[i].sprite.pushToSprite(&background, cacti[i].x, cactiY, TFT_BLACK);
+  }
 }
