@@ -33,6 +33,16 @@ bool inJump;
 int jumpPosition;
 int walkFrame;
 
+TFT_eSprite cactusSprite = TFT_eSprite(&tft);
+TFT_eSprite cacti2Sprite = TFT_eSprite(&tft);
+TFT_eSprite cacti4Sprite = TFT_eSprite(&tft);
+
+TFT_eSprite cactusSprites[3] = {
+  cactusSprite,
+  cacti2Sprite,
+  cacti4Sprite
+};
+
 class Cactus {
 public:
   TFT_eSprite sprite = TFT_eSprite(&tft);
@@ -55,6 +65,17 @@ void setup() {
   inJump = 0;
   jumpPosition = 0;
   walkFrame = 0;
+
+
+  cactusSprites[0].createSprite(cactus_width, cactus_height);
+  cactusSprites[0].drawXBitmap(0, 0, cactus_bits, cactus_width, cactus_height, TFT_DARKGREY, TFT_BLACK);
+
+  cactusSprites[1].createSprite(cacti2_width, cacti2_height);
+  cactusSprites[1].drawXBitmap(0, 0, cacti2_bits, cacti2_width, cacti2_height, TFT_DARKGREY, TFT_BLACK);
+
+  cactusSprites[2].createSprite(cacti4_width, cacti4_height);
+  cactusSprites[2].drawXBitmap(0, 0, cacti4_bits, cacti4_width, cacti4_height, TFT_DARKGREY, TFT_BLACK);
+
 
   tft.init();
   tft.setRotation(3);
@@ -146,8 +167,7 @@ void updateDino() {
 void handleCacti() {
   for (int i = 0; i < cactiAmount; i++) {
     if (!cacti[i].init) {
-      cacti[i].sprite.createSprite(cactus_width, cactus_height);
-      cacti[i].sprite.drawXBitmap(0, 0, cactus_bits, cactus_width, cactus_height, TFT_DARKGREY, TFT_BLACK);
+      cacti[i].sprite = TFT_eSprite(cactusSprites[0]);
       cacti[i].x = 320 * i + random(-50, 50);
       cacti[i].init = 1;
     }
