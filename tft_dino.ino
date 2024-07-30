@@ -1,8 +1,6 @@
 #include <TFT_eSPI.h>
 #include "bitmaps.h"
 
-#define cactiAmount 4
-
 const int jumpButton = 15;
 
 TFT_eSPI tft = TFT_eSPI();
@@ -24,6 +22,8 @@ int gameSpeed;
 
 bool buttonPressed;
 
+const int dinoHitboxStart[] = { 10, 0 };
+const int dinoHitboxEnd[] = { 27, 42 };
 const int dinoX = 40;
 const int dinoY = 191;
 const int jumpLength = 11;
@@ -33,12 +33,12 @@ bool inJump;
 int jumpPosition;
 int walkFrame;
 
-TFT_eSprite cactusSprite = TFT_eSprite(&tft);
+TFT_eSprite cacti1Sprite = TFT_eSprite(&tft);
 TFT_eSprite cacti2Sprite = TFT_eSprite(&tft);
 TFT_eSprite cacti4Sprite = TFT_eSprite(&tft);
 
 TFT_eSprite *cactusSprites[3] = {
-  &cactusSprite,
+  &cacti1Sprite,
   &cacti2Sprite,
   &cacti4Sprite
 };
@@ -49,8 +49,12 @@ struct cactus {
   bool init;
 };
 
+const int cactiAmount = 4;
 struct cactus cacti[cactiAmount];
 const int cactiY = 185;
+
+const int cactiHitboxX = 6;
+const int cactiHitboxY = 10;
 
 void setup() {
   pinMode(jumpButton, INPUT_PULLUP);
@@ -107,19 +111,30 @@ void loop() {
   updateDino();
   handleCacti();
 
-  background.pushSprite(0, 0);
-  background.deleteSprite();
-
   if (gameOver) {
     if (buttonPressed) {
       gameOver = 0;
     }
 
     while (buttonPressed) {
-      delay(50); // prevent ghost jump when starting game
+      delay(50);  // prevent ghost jump when starting game
       buttonPressed = !digitalRead(jumpButton);
     }
+
+    background.setTextSize(1);
+    background.setTextFont(4);
+    background.setTextColor(TFT_DARKGREY);
+    background.setTextWrap(false);
+
+    background.setCursor(100, 50);
+    background.print("Game Over");
+
+    background.setCursor(50, 90);
+    background.print("Press Button to Start");
   }
+
+  background.pushSprite(0, 0);
+  background.deleteSprite();
 }
 
 void scroll_ground() {
@@ -198,11 +213,19 @@ void handleCacti() {
     for (int i = 0; i < cactiAmount; i++) {
       if (!cacti[i].init) {
         cacti[i].sprite = cactusSprites[random(3)];
-        cacti[i].x = 320 * i + random(-50, 50);
+        cacti[i].x = 320 * (i + 2) + random(-50, 50);
         cacti[i].init = 1;
       }
 
       cacti[i].sprite->pushToSprite(&background, cacti[i].x, cactiY, TFT_BLACK);
+    }
+  }
+}
+
+void handleCollision() {
+  if (!gameOver) {
+    for (int i = 0; i < cactiAmount; i++) {
+      
     }
   }
 }
