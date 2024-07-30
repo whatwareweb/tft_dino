@@ -37,27 +37,25 @@ TFT_eSprite cactusSprite = TFT_eSprite(&tft);
 TFT_eSprite cacti2Sprite = TFT_eSprite(&tft);
 TFT_eSprite cacti4Sprite = TFT_eSprite(&tft);
 
-TFT_eSprite cactusSprites[3] = {
-  cactusSprite,
-  cacti2Sprite,
-  cacti4Sprite
+TFT_eSprite *cactusSprites[3] = {
+  &cactusSprite,
+  &cacti2Sprite,
+  &cacti4Sprite
 };
 
-class Cactus {
-public:
-  TFT_eSprite sprite = TFT_eSprite(&tft);
+struct cactus {
+  TFT_eSprite *sprite;
   int x;
   bool init;
 };
 
-Cactus cacti[cactiAmount];
+struct cactus cacti[cactiAmount];
 const int cactiY = 185;
-
 
 void setup() {
   pinMode(jumpButton, INPUT_PULLUP);
 
-  gameOver = 0;
+  gameOver = 1;
 
   groundPosition = 0;
   gameSpeed = 6;
@@ -67,14 +65,14 @@ void setup() {
   walkFrame = 0;
 
 
-  cactusSprites[0].createSprite(cactus_width, cactus_height);
-  cactusSprites[0].drawXBitmap(0, 0, cactus_bits, cactus_width, cactus_height, TFT_DARKGREY, TFT_BLACK);
+  cactusSprites[0]->createSprite(cactus_width, cactus_height);
+  cactusSprites[0]->drawXBitmap(0, 0, cactus_bits, cactus_width, cactus_height, TFT_DARKGREY, TFT_BLACK);
 
-  cactusSprites[1].createSprite(cacti2_width, cacti2_height);
-  cactusSprites[1].drawXBitmap(0, 0, cacti2_bits, cacti2_width, cacti2_height, TFT_DARKGREY, TFT_BLACK);
+  cactusSprites[1]->createSprite(cacti2_width, cacti2_height);
+  cactusSprites[1]->drawXBitmap(0, 0, cacti2_bits, cacti2_width, cacti2_height, TFT_DARKGREY, TFT_BLACK);
 
-  cactusSprites[2].createSprite(cacti4_width, cacti4_height);
-  cactusSprites[2].drawXBitmap(0, 0, cacti4_bits, cacti4_width, cacti4_height, TFT_DARKGREY, TFT_BLACK);
+  cactusSprites[2]->createSprite(cacti4_width, cacti4_height);
+  cactusSprites[2]->drawXBitmap(0, 0, cacti4_bits, cacti4_width, cacti4_height, TFT_DARKGREY, TFT_BLACK);
 
 
   tft.init();
@@ -102,24 +100,35 @@ void setup() {
 void loop() {
   buttonPressed = !digitalRead(jumpButton);
 
-  if (!gameOver) {
-    background.createSprite(320, 240);
-    background.fillSprite(TFT_WHITE);
+  background.createSprite(320, 240);
+  background.fillSprite(TFT_WHITE);
 
-    scroll_ground();
-    updateDino();
-    handleCacti();
+  scroll_ground();
+  updateDino();
+  handleCacti();
 
-    background.pushSprite(0, 0);
-    background.deleteSprite();
+  background.pushSprite(0, 0);
+  background.deleteSprite();
+
+  if (gameOver) {
+    if (buttonPressed) {
+      gameOver = 0;
+    }
+
+    while (buttonPressed) {
+      delay(50); // prevent ghost jump when starting game
+      buttonPressed = !digitalRead(jumpButton);
+    }
   }
 }
 
 void scroll_ground() {
-  groundPosition -= gameSpeed;
+  if (!gameOver) {
+    groundPosition -= gameSpeed;
 
-  if (groundPosition <= -ground_width) {
-    groundPosition = 0;
+    if (groundPosition <= -ground_width) {
+      groundPosition = 0;
+    }
   }
 
   if (groundPosition <= -ground_width + 320) {
@@ -131,56 +140,69 @@ void scroll_ground() {
 }
 
 void updateDino() {
-  if (buttonPressed && !inJump) {
-    walkFrame = 0;
-    inJump = 1;
-  }
-
-  if (!inJump) {
-    if (walkFrame >= 4) {
+  if (!gameOver) {
+    if (buttonPressed && !inJump) {
       walkFrame = 0;
+      inJump = 1;
     }
 
-    if (walkFrame < 2) {
-      walk1Dino.pushToSprite(&background, dinoX, dinoY, TFT_BLACK);
+    if (!inJump) {
+      if (walkFrame >= 4) {
+        walkFrame = 0;
+      }
+
+      if (walkFrame < 2) {
+        walk1Dino.pushToSprite(&background, dinoX, dinoY, TFT_BLACK);
+      } else {
+        walk2Dino.pushToSprite(&background, dinoX, dinoY, TFT_BLACK);
+      }
     } else {
-      walk2Dino.pushToSprite(&background, dinoX, dinoY, TFT_BLACK);
+      if (walkFrame < jumpLength) {
+        jumpPosition += jumpHeight;
+      } else if (walkFrame < jumpLength + jumpHover) {
+        if (!buttonPressed) {
+          walkFrame += jumpHover - (walkFrame - jumpLength);
+        }
+      } else if (walkFrame < jumpLength * 2 + jumpHover) {
+        jumpPosition -= jumpHeight;
+      } else {
+        inJump = 0;
+        jumpPosition = 0;
+      }
+
+      stillDino.pushToSprite(&background, dinoX, dinoY - jumpPosition, TFT_BLACK);
     }
+
+    walkFrame++;
   } else {
-    if (walkFrame < jumpLength) {
-      jumpPosition += jumpHeight;
-    } else if (walkFrame < jumpLength + jumpHover) {
-      // do nothing to stay in the air for 2 frames
-    } else if (walkFrame < jumpLength * 2 + jumpHover) {
-      jumpPosition -= jumpHeight;
-    } else {
-      inJump = 0;
-      jumpPosition = 0;
-    }
-
-    stillDino.pushToSprite(&background, dinoX, dinoY - jumpPosition, TFT_BLACK);
+    deadDino.pushToSprite(&background, dinoX, dinoY - jumpPosition, TFT_BLACK);
   }
-
-  walkFrame++;
 }
 
 void handleCacti() {
-  for (int i = 0; i < cactiAmount; i++) {
-    if (!cacti[i].init) {
-      cacti[i].sprite = TFT_eSprite(cactusSprites[0]);
-      cacti[i].x = 320 * i + random(-50, 50);
-      cacti[i].init = 1;
-    }
+  if (!gameOver) {
+    for (int i = 0; i < cactiAmount; i++) {
+      if (cacti[i].x <= -cacti[i].sprite->width()) {
+        cacti[i].x = 320 * cactiAmount + random(-50, 50);
+        cacti[i].sprite = cactusSprites[random(3)];
+      }
+      cacti[i].x -= gameSpeed;
 
-    if (cacti[i].x <= -cacti[i].sprite.width()) {
-      cacti[i].x = 320 * cactiAmount + random(-50, 50);
-    }
-    cacti[i].x -= gameSpeed;
+      if (cacti[i].x <= dinoX) {
+        score++;
+      }
 
-    if (cacti[i].x <= dinoX) {
-      score++;
+      cacti[i].sprite->pushToSprite(&background, cacti[i].x, cactiY, TFT_BLACK);
     }
+  } else {
+    for (int i = 0; i < cactiAmount; i++) {
+      if (!cacti[i].init) {
+        cacti[i].sprite = cactusSprites[random(3)];
+        cacti[i].x = 320 * i + random(-50, 50);
+        cacti[i].init = 1;
+      }
 
-    cacti[i].sprite.pushToSprite(&background, cacti[i].x, cactiY, TFT_BLACK);
+      cacti[i].sprite->pushToSprite(&background, cacti[i].x, cactiY, TFT_BLACK);
+    }
   }
 }
