@@ -112,7 +112,7 @@ void loop() {
   handleCacti();
   handleCollision();
 
-  if (gameOver) {
+  while (gameOver) {
     background.setTextSize(1);
     background.setTextFont(4);
     background.setTextColor(TFT_DARKGREY);
@@ -126,17 +126,21 @@ void loop() {
 
     background.pushSprite(0, 0);
 
-    while (buttonPressed) {
+    if (buttonPressed) {
       gameOver = 0;
+      groundPosition = 0;
+      gameSpeed = 6;
+      inJump = 0;
       jumpPosition = 0;
-
-      for (int i = 0; i < cactiAmount; i++) {
-        cacti[i].init = 0;
-      }
-
-      delay(50);  // prevent ghost jump when starting game
-      buttonPressed = !digitalRead(jumpButton);
+      walkFrame = 0;
     }
+
+    for (int i = 0; i < cactiAmount; i++) {
+      cacti[i].init = 0;
+    }
+
+    buttonPressed = !digitalRead(jumpButton);
+    delay(50);  // prevent ghost jump when starting game
   }
 
   background.pushSprite(0, 0);
@@ -203,6 +207,12 @@ void updateDino() {
 void handleCacti() {
   if (!gameOver) {
     for (int i = 0; i < cactiAmount; i++) {
+      if (!cacti[i].init) {
+        cacti[i].sprite = cactusSprites[random(3)];
+        cacti[i].x = 320 * (i + 2) + random(-50, 50);
+        cacti[i].init = 1;
+      }
+
       if (cacti[i].x <= -cacti[i].sprite->width()) {
         cacti[i].x = 320 * cactiAmount + random(-50, 50);
         cacti[i].sprite = cactusSprites[random(3)];
@@ -229,18 +239,13 @@ void handleCacti() {
 }
 
 void handleCollision() {
-  if (!gameOver) {
-    for (int i = 0; i < cactiAmount; i++) {
-      if (
-        dinoX + dinoHitboxStart < cacti[i].x + cacti[i].sprite->width() - cactiHitboxX &&
-        dinoX + dinoHitboxEnd > cacti[i].x + cactiHitboxX &&
-        dinoY - jumpPosition + dino_height > cactiY + cactiHitboxY
-      ) {
-        Serial.println(dinoY);
-        Serial.println(cactiY);
-        Serial.println();
-        gameOver = 1;
-      }
+  for (int i = 0; i < cactiAmount; i++) {
+    if (
+      dinoX + dinoHitboxStart < cacti[i].x + cacti[i].sprite->width() - cactiHitboxX && dinoX + dinoHitboxEnd > cacti[i].x + cactiHitboxX && dinoY - jumpPosition + dino_height > cactiY + cactiHitboxY) {
+      Serial.println(dinoY);
+      Serial.println(cactiY);
+      Serial.println();
+      gameOver = 1;
     }
   }
 }
