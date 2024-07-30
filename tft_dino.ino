@@ -22,8 +22,8 @@ int gameSpeed;
 
 bool buttonPressed;
 
-const int dinoHitboxStart[] = { 10, 0 };
-const int dinoHitboxEnd[] = { 27, 42 };
+const int dinoHitboxStart = 10;
+const int dinoHitboxEnd = 27;
 const int dinoX = 40;
 const int dinoY = 191;
 const int jumpLength = 11;
@@ -110,17 +110,9 @@ void loop() {
   scroll_ground();
   updateDino();
   handleCacti();
+  handleCollision();
 
   if (gameOver) {
-    if (buttonPressed) {
-      gameOver = 0;
-    }
-
-    while (buttonPressed) {
-      delay(50);  // prevent ghost jump when starting game
-      buttonPressed = !digitalRead(jumpButton);
-    }
-
     background.setTextSize(1);
     background.setTextFont(4);
     background.setTextColor(TFT_DARKGREY);
@@ -131,6 +123,20 @@ void loop() {
 
     background.setCursor(50, 90);
     background.print("Press Button to Start");
+
+    background.pushSprite(0, 0);
+
+    while (buttonPressed) {
+      gameOver = 0;
+      jumpPosition = 0;
+
+      for (int i = 0; i < cactiAmount; i++) {
+        cacti[i].init = 0;
+      }
+
+      delay(50);  // prevent ghost jump when starting game
+      buttonPressed = !digitalRead(jumpButton);
+    }
   }
 
   background.pushSprite(0, 0);
@@ -225,7 +231,16 @@ void handleCacti() {
 void handleCollision() {
   if (!gameOver) {
     for (int i = 0; i < cactiAmount; i++) {
-      
+      if (
+        dinoX + dinoHitboxStart < cacti[i].x + cacti[i].sprite->width() - cactiHitboxX &&
+        dinoX + dinoHitboxEnd > cacti[i].x + cactiHitboxX &&
+        dinoY - jumpPosition + dino_height > cactiY + cactiHitboxY
+      ) {
+        Serial.println(dinoY);
+        Serial.println(cactiY);
+        Serial.println();
+        gameOver = 1;
+      }
     }
   }
 }
