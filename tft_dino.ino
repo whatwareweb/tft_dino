@@ -15,7 +15,7 @@ TFT_eSprite walk2Dino = TFT_eSprite(&tft);
 TFT_eSprite deadDino = TFT_eSprite(&tft);
 
 bool gameOver;
-int score = 0;
+int score;
 
 int groundPosition;
 int gameSpeed;
@@ -47,6 +47,7 @@ struct cactus {
   TFT_eSprite *sprite;
   int x;
   bool init;
+  bool hasScored;
 };
 
 const int cactiAmount = 4;
@@ -63,6 +64,7 @@ void setup() {
 
   groundPosition = 0;
   gameSpeed = 6;
+  score = 0;
 
   inJump = 0;
   jumpPosition = 0;
@@ -107,17 +109,20 @@ void loop() {
   background.createSprite(320, 240);
   background.fillSprite(TFT_WHITE);
 
+  background.setTextSize(1);
+  background.setTextFont(4);
+  background.setTextColor(TFT_DARKGREY);
+  background.setTextWrap(false);
+  background.setCursor(5, 5);
+
+  background.print(score);
+
   scroll_ground();
   updateDino();
   handleCacti();
   handleCollision();
 
   while (gameOver) {
-    background.setTextSize(1);
-    background.setTextFont(4);
-    background.setTextColor(TFT_DARKGREY);
-    background.setTextWrap(false);
-
     background.setCursor(100, 50);
     background.print("Game Over");
 
@@ -133,6 +138,7 @@ void loop() {
       inJump = 0;
       jumpPosition = 0;
       walkFrame = 0;
+      score = 0;
     }
 
     for (int i = 0; i < cactiAmount; i++) {
@@ -207,41 +213,47 @@ void updateDino() {
 void handleCacti() {
   if (!gameOver) {
     for (int i = 0; i < cactiAmount; i++) {
-      if (!cacti[i].init) {
-        cacti[i].sprite = cactusSprites[random(3)];
-        cacti[i].x = 320 * (i + 2) + random(-50, 50);
-        cacti[i].init = 1;
-      }
+      initCacti(i);
 
       if (cacti[i].x <= -cacti[i].sprite->width()) {
         cacti[i].x = 320 * cactiAmount + random(-50, 50);
         cacti[i].sprite = cactusSprites[random(3)];
+        cacti[i].hasScored = 0;
       }
+
       cacti[i].x -= gameSpeed;
 
-      if (cacti[i].x <= dinoX) {
+      if (cacti[i].x <= dinoX && !cacti[i].hasScored) {
         score++;
+        if (score % 9 == 0) {
+          gameSpeed++;
+        }
+        cacti[i].hasScored = 1;
       }
 
       cacti[i].sprite->pushToSprite(&background, cacti[i].x, cactiY, TFT_BLACK);
     }
   } else {
     for (int i = 0; i < cactiAmount; i++) {
-      if (!cacti[i].init) {
-        cacti[i].sprite = cactusSprites[random(3)];
-        cacti[i].x = 320 * (i + 2) + random(-50, 50);
-        cacti[i].init = 1;
-      }
+      initCacti(i);
 
       cacti[i].sprite->pushToSprite(&background, cacti[i].x, cactiY, TFT_BLACK);
     }
   }
 }
 
+void initCacti(int i) {
+  if (!cacti[i].init) {
+    cacti[i].sprite = cactusSprites[random(3)];
+    cacti[i].x = 320 * (i + 2) + random(-50, 50);
+    cacti[i].hasScored = 0;
+    cacti[i].init = 1;
+  }
+}
+
 void handleCollision() {
   for (int i = 0; i < cactiAmount; i++) {
-    if (
-      dinoX + dinoHitboxStart < cacti[i].x + cacti[i].sprite->width() - cactiHitboxX && dinoX + dinoHitboxEnd > cacti[i].x + cactiHitboxX && dinoY - jumpPosition + dino_height > cactiY + cactiHitboxY) {
+    if (dinoX + dinoHitboxStart < cacti[i].x + cacti[i].sprite->width() - cactiHitboxX && dinoX + dinoHitboxEnd > cacti[i].x + cactiHitboxX && dinoY - jumpPosition + dino_height > cactiY + cactiHitboxY) {
       Serial.println(dinoY);
       Serial.println(cactiY);
       Serial.println();
